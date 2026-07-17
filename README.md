@@ -2,6 +2,8 @@
 
 A single-file, browser-only OSINT dashboard for IP reputation, network, geolocation, DNS, and blacklist intelligence — no backend, no server, no tracking. Static HTML/CSS/JS, free to host on GitHub Pages.
 
+[Live preview](https://M-Sugiarto.github.io/grc-nist-dashboard/) — open `index.html` directly in any browser, no build step, no server required.
+
 **Repo:** [github.com/M-Sugiarto/ip_ip](https://github.com/M-Sugiarto/ip_ip)
 **Author:** [github.com/M-Sugiarto](https://github.com/M-Sugiarto)
 
