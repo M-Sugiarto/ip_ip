@@ -322,6 +322,19 @@ pre.jsonblock{
 .field .desc{font-size:11px;color:var(--text-mute);margin-top:5px;line-height:1.4;}
 .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;flex-wrap:wrap;}
 
+/* ============================= GRAPH & FEED STYLES ============================= */
+.graph-container{width:100%;height:520px;background:var(--bg-elevated);border:1px solid var(--line);border-radius:var(--radius);position:relative;overflow:hidden;}
+.graph-container svg{width:100%;height:100%;display:block;}
+.feed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.feed-card{background:var(--bg-panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:var(--shadow);}
+.feed-card h4{margin:0 0 8px;font-size:14px;font-family:var(--font-sans);}
+.feed-card h4 a{color:var(--text);text-decoration:none;}
+.feed-card h4 a:hover{color:var(--accent);text-decoration:underline;}
+.feed-meta{font-size:11px;color:var(--text-mute);font-family:var(--font-mono);margin-bottom:10px;display:flex;justify-content:space-between;}
+.diag-panel{background:var(--bg-elevated);border:1px solid var(--line);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-family:var(--font-mono);font-size:11px;}
+.diag-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--line);}
+.diag-row:last-child{border-bottom:none;}
+
 footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);text-align:center;}
 .supported-by{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin-bottom:18px;}
 .sb-label{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-mute);margin-right:6px;}
@@ -374,7 +387,7 @@ footer .made-by a{color:var(--accent);}
   <section class="hero">
     <div class="hero-eyebrow">Browser-only · No backend · Free sources</div>
     <h1>Point it at an <em>IP</em>. Get the picture.</h1>
-    <p>Aggregates geolocation, ASN/network, RDAP/WHOIS, DNS, DNSBL blacklists, open ports, and (with your own free keys) VirusTotal, GreyNoise, IPQualityScore, AbuseIPDB and OTX reputation — entirely client-side.</p>
+    <p>Aggregates geolocation, ASN/network, RDAP/WHOIS, DNS, DNSBL blacklists, open ports, Threat Feeds, Infrastructure Pivot Graphs, and (with your own free keys) VirusTotal, GreyNoise, IPQualityScore, AbuseIPDB and OTX reputation — entirely client-side.</p>
     <div class="search-box">
       <input type="text" id="ipInput" placeholder="8.8.8.8 or 2606:4700:4700::1111" autocomplete="off" spellcheck="false">
       <button class="btn btn-primary" id="lookupBtn">Analyze</button>
@@ -383,7 +396,6 @@ footer .made-by a{color:var(--accent);}
       <span class="chip" data-ip="my">My IP</span>
       <span class="chip" data-ip="8.8.8.8">8.8.8.8</span>
       <span class="chip" data-ip="1.1.1.1">1.1.1.1</span>
-      <span class="chip" data-ip="9.9.9.9">9.9.9.9</span>
     </div>
     <div class="status-line" id="statusLine"></div>
   </section>
@@ -428,6 +440,8 @@ footer .made-by a{color:var(--accent);}
     <button class="tab-btn" data-tab="dns">DNS</button>
     <button class="tab-btn" data-tab="threat">Threat &amp; Blacklists</button>
     <button class="tab-btn" data-tab="ports">Ports &amp; Services</button>
+    <button class="tab-btn" data-tab="pivot">Pivot Graph</button>
+    <button class="tab-btn" data-tab="rss">Threat Feed</button>
     <button class="tab-btn" data-tab="raw">Raw JSON</button>
   </nav>
 
@@ -490,6 +504,36 @@ footer .made-by a{color:var(--accent);}
       </div>
     </div>
 
+    <div class="tab-panel" id="panel-pivot">
+      <div class="panel-grid" style="grid-template-columns:1fr;">
+        <div class="box">
+          <h3>Infrastructure Pivot Graph <span class="tag">Client-side OSINT relation mapping</span></h3>
+          <p style="font-size:12px;color:var(--text-mute);margin-top:0;margin-bottom:14px;">Visualizes ASN neighbours, hostnames, reverse-ip ranges, TLS certificate Subject Alternative Names (SANs) from crt.sh, and correlation links. Click nodes to isolate or expand.</p>
+          <div class="graph-container" id="pivotGraphContainer">
+            <svg id="pivotSvg"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-rss">
+      <div class="box" style="margin-bottom:20px;">
+        <h3>RSS Feed Diagnostics &amp; Proxy Race Status <span class="tag">Multi-source parallel fetch</span></h3>
+        <div class="diag-panel" id="rssDiagPanel">
+          <div class="loading-row"><span class="dot"></span>Waiting for feed aggregation…</div>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Live Security Threat Feed <span class="tag">10 Trusted Security Sources</span></h3>
+        <div style="margin-bottom:16px;">
+          <input type="text" id="rssFilterInput" placeholder="Filter articles by keyword or IOC (e.g. CVE, ransomware, IP)..." style="width:100%;background:var(--bg-input);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:var(--radius);font-family:var(--font-mono);font-size:13px;outline:none;">
+        </div>
+        <div class="feed-grid" id="rssFeedGrid">
+          <div class="loading-row"><span class="dot"></span>Fetching feeds via parallel CORS proxy race…</div>
+        </div>
+      </div>
+    </div>
+
     <div class="tab-panel" id="panel-raw">
       <div class="box">
         <h3>Raw Aggregated JSON <span class="tag" id="rawTiming"></span></h3>
@@ -520,6 +564,7 @@ footer .made-by a{color:var(--accent);}
       <a class="sb-link" href="https://rdap.org" target="_blank" rel="noopener">RDAP.org</a>
       <a class="sb-link" href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/" target="_blank" rel="noopener">Cloudflare DoH</a>
       <a class="sb-link" href="https://internetdb.shodan.io" target="_blank" rel="noopener">Shodan InternetDB</a>
+      <a class="sb-link" href="https://crt.sh" target="_blank" rel="noopener">crt.sh</a>
       <a class="sb-link" href="https://www.abuseipdb.com" target="_blank" rel="noopener">AbuseIPDB</a>
       <a class="sb-link" href="https://www.virustotal.com" target="_blank" rel="noopener">VirusTotal</a>
       <a class="sb-link" href="https://www.greynoise.io" target="_blank" rel="noopener">GreyNoise</a>
@@ -595,13 +640,6 @@ footer .made-by a{color:var(--accent);}
 (function(){
 "use strict";
 
-/* =========================================================================
-   OPTIONAL: bake API keys directly into this file before deploying, so
-   every visitor gets full threat-intel data with zero setup on their end.
-   Leave a value as '' to require it to be entered via the Settings (⚙)
-   panel instead — keys entered there live only in that visitor's own
-   browser localStorage and are never read back into this file.
-   ========================================================================= */
 const DEFAULT_KEYS = {
   abuseipdb: '',
   virustotal: '',
@@ -610,7 +648,6 @@ const DEFAULT_KEYS = {
   otx: ''
 };
 
-/* ===================== STATE ===================== */
 const state = {
   ip: null,
   data: {},
@@ -618,6 +655,8 @@ const state = {
   startTime: 0,
   map: null,
   marker: null,
+  rssItems: [],
+  rssDiagnostics: {}
 };
 
 const $ = (sel, root=document) => root.querySelector(sel);
@@ -645,7 +684,6 @@ function getKey(providerId){
 }
 function hasKey(providerId){ return !!getKey(providerId); }
 
-/* ===================== THEME ===================== */
 function initTheme(){
   const saved = localStorage.getItem(LS_KEYS.theme) || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
@@ -659,7 +697,6 @@ $('#themeBtn').addEventListener('click', () => {
 });
 initTheme();
 
-/* ===================== API STATUS BAR ===================== */
 function renderApiStatusBar(){
   const bar = $('#apiStatusBar');
   const chips = PROVIDERS.map(p => {
@@ -671,7 +708,6 @@ function renderApiStatusBar(){
   bar.innerHTML = `<span class="asb-label">API status</span>${chips}`;
 }
 
-/* ===================== SETTINGS MODAL ===================== */
 function loadSettings(){
   $('#abuseKeyInput').value = localStorage.getItem(LS_KEYS.abuse) || '';
   $('#vtKeyInput').value = localStorage.getItem(LS_KEYS.vt) || '';
@@ -712,7 +748,6 @@ document.addEventListener('click', (e) => {
   if(el){ openSettings(el.dataset.configure); }
 });
 
-/* ===================== HELPERS ===================== */
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function na(v, fallback='<span class="na">unavailable</span>'){ return (v===undefined||v===null||v==='') ? fallback : esc(String(v)); }
 function setStatus(msg, isErr=false){
@@ -750,7 +785,6 @@ async function fetchJson(url, opts={}, timeoutMs=9000){
   }
 }
 
-/* simple client-side cache */
 function cacheGet(ip){
   const ttl = parseInt(localStorage.getItem(LS_KEYS.ttl) || '15', 10);
   if(ttl <= 0) return null;
@@ -766,7 +800,6 @@ function cacheSet(ip, data){
   try{ localStorage.setItem(LS_KEYS.cachePrefix + ip, JSON.stringify({t:Date.now(), data})); }catch(e){}
 }
 
-/* history */
 function pushHistory(ip, riskScore, riskLevel){
   let hist = [];
   try{ hist = JSON.parse(localStorage.getItem(LS_KEYS.history) || '[]'); }catch(e){}
@@ -808,7 +841,6 @@ function riskLabel(score){
   return 'CRITICAL';
 }
 
-/* ===================== TABS ===================== */
 $$('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     $$('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -816,10 +848,10 @@ $$('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     $('#panel-' + btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab === 'geo' && state.map){ setTimeout(()=>state.map.invalidateSize(), 100); }
+    if(btn.dataset.tab === 'pivot') { setTimeout(()=>renderPivotGraph(), 100); }
   });
 });
 
-/* ===================== QUICK CHIPS ===================== */
 $$('.chip').forEach(chip => {
   chip.addEventListener('click', async () => {
     if(chip.dataset.ip === 'my'){
@@ -835,274 +867,351 @@ $$('.chip').forEach(chip => {
   });
 });
 
-/* ===================== MAIN LOOKUP ===================== */
-$('#lookupBtn').addEventListener('click', () => runLookup($('#ipInput').value.trim()));
-$('#ipInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') runLookup($('#ipInput').value.trim()); });
-
-const FETCHERS = [
-  fetchGeo, fetchRipestat, fetchBgpview, fetchRdap, fetchDns, fetchDnsbl, fetchShodan,
-  fetchAbuseIpdb, fetchVirusTotal, fetchGreyNoise, fetchIpqs, fetchOtx
+const RSS_SOURCES = [
+  { name: 'BleepingComputer', url: 'https://www.bleepingcomputer.com/feed/' },
+  { name: 'The Hacker News', url: 'https://thehackernews.com/rss.xml' },
+  { name: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/' },
+  { name: 'SecurityWeek', url: 'https://www.securityweek.com/feed/' },
+  { name: 'Dark Reading', url: 'https://www.darkreading.com/rss.xml' },
+  { name: 'The Record', url: 'https://thererecord.media/rss' },
+  { name: 'SecurityAffairs', url: 'https://securityaffairs.com/feed' },
+  { name: 'Schneier on Security', url: 'https://www.schneier.com/feed/atom/' },
+  { name: 'Wired Security', url: 'https://www.wired.com/feed/category/security/latest/rss' },
+  { name: 'CSO Online', url: 'https://www.csoonline.com/index.rss' }
 ];
 
-async function runLookup(ip){
-  if(!ip){ setStatus('Enter an IP address first.', true); return; }
-  if(!isValidIP(ip)){ setStatus('That doesn\'t look like a valid IPv4/IPv6 address.', true); return; }
+async function fetchViaProxyRace(sourceObj, parserFn) {
+  const feedUrl = sourceObj.url;
+  const attempts = [];
+  
+  const proxies = [
+    { name: 'AllOrigins', getUrl: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+    { name: 'CodeTabs', getUrl: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
+    { name: 'Jina AI Reader', getUrl: u => `https://r.jina.ai/${u}` },
+    { name: 'ThingProxy', getUrl: u => `https://thingproxy.freeboard.io/fetch/${u}` },
+    { name: 'CorsProxy.io', getUrl: u => `https://corsproxy.io/?url=${encodeURIComponent(u)}` },
+    { name: 'Direct', getUrl: u => u }
+  ];
 
-  state.ip = ip;
-  state.data = {};
-  state.errors = {};
-  state.startTime = performance.now();
-
-  $('#lookupBtn').disabled = true;
-  $('#lookupBtn').textContent = 'Scanning…';
-  $('#emptyState').style.display = 'none';
-  $('#summary').classList.add('show');
-  $('#tabs').style.display = 'flex';
-  $('#exportBar').style.display = 'flex';
-  $('#heNetLink').href = 'https://bgp.he.net/ip/' + encodeURIComponent(ip);
-  setStatus('<span class="dot"></span>querying public sources for ' + esc(ip) + '…');
-  resetPanels();
-
-  const cached = cacheGet(ip);
-  if(cached){
-    state.data = cached;
-    finishScanUi(100);
-    renderAll();
-    setStatus('Loaded from local cache (age &lt; TTL). <a href="#" id="forceRefresh">Refresh now</a>');
-    const fr = document.getElementById('forceRefresh');
-    if(fr) fr.addEventListener('click', (e)=>{ e.preventDefault(); localStorage.removeItem(LS_KEYS.cachePrefix+ip); runLookup(ip); });
-    $('#lookupBtn').disabled = false;
-    $('#lookupBtn').textContent = 'Analyze';
-    return;
-  }
-
-  // ---- animated scan progress: 1-100% glowing ring while sources resolve ----
-  $('#gaugeCard').classList.add('scanning');
-  $('#gaugeMax').textContent = 'SCANNING';
-  let done = 0;
-  const total = FETCHERS.length;
-  updateScanProgress(0);
-
-  const wrapped = FETCHERS.map(fn => fn(ip).catch(()=>{}).finally(() => {
-    done++;
-    updateScanProgress(Math.max(1, Math.round(done/total*100)));
-  }));
-  await Promise.allSettled(wrapped);
-
-  cacheSet(ip, state.data);
-  finishScanUi();
-  renderAll();
-
-  const ms = Math.round(performance.now() - state.startTime);
-  setStatus(`Scan complete in ${ms}ms · sources queried: ${total}`);
-  $('#lookupBtn').disabled = false;
-  $('#lookupBtn').textContent = 'Analyze';
-}
-
-function updateScanProgress(pct){
-  const circumference = 2 * Math.PI * 70;
-  const offset = circumference - (pct/100)*circumference;
-  const fg = $('#gaugeFg');
-  fg.style.stroke = 'var(--accent)';
-  fg.setAttribute('stroke-dasharray', circumference.toFixed(1));
-  fg.style.strokeDashoffset = offset.toFixed(1);
-  $('#gaugeScore').textContent = pct + '%';
-  $('#gaugeScore').style.color = 'var(--accent)';
-  $('#gaugeLabel').textContent = 'SCANNING';
-  $('#gaugeLabel').style.color = 'var(--accent)';
-}
-function finishScanUi(){
-  $('#gaugeCard').classList.remove('scanning');
-  $('#gaugeMax').textContent = '/ 100 RISK';
-}
-
-function resetPanels(){
-  $('#asnKv').innerHTML = loadingKv();
-  $('#connKv').innerHTML = loadingKv();
-  $('#geoKv').innerHTML = loadingKv();
-  $('#whoisKv').innerHTML = loadingKv();
-  $('#dnsKv').innerHTML = loadingKv();
-  $('#ptrBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
-  $('#dnsblBody').innerHTML = `<tr><td colspan="3" class="loading-row"><span class="dot"></span>querying zones…</td></tr>`;
-  $('#portsBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
-  $('#abuseBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
-  $('#vtBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
-  $('#gnBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
-  $('#ipqsBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
-  $('#otxBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
-  $('#summaryCards').innerHTML = '';
-  $('#gaugeScore').textContent = '0%';
-  $('#gaugeLabel').textContent = 'SCANNING';
-}
-function loadingKv(){ return `<div class="loading-row" style="grid-column:1/-1;"><span class="dot"></span>querying…</div>`; }
-
-/* ===================== SOURCE: ipwho.is (geo + connection + security) — no key ===================== */
-async function fetchGeo(ip){
-  try{
-    const d = await fetchJson('https://ipwho.is/' + encodeURIComponent(ip));
-    if(d.success === false) throw new Error(d.message || 'lookup failed');
-    state.data.geo = d;
-  }catch(e){ state.errors.geo = e.message || 'failed'; }
-}
-
-/* ===================== SOURCE: BGPView (ASN / prefix) — no key ===================== */
-/* Note: BGPView is best-effort only — it's known to be flaky / occasionally
-   CORS-block or time out from browsers. RIPEstat (below) is the reliable
-   primary source for ASN/network data; BGPView just adds extra detail
-   (peers/upstreams) on top when it happens to be up. */
-async function fetchBgpview(ip){
-  try{
-    const d = await fetchJson('https://api.bgpview.io/ip/' + encodeURIComponent(ip), {}, 6000);
-    state.data.bgpview = d;
-  }catch(e){ state.errors.bgpview = 'BGPView unavailable (' + (e.name === 'AbortError' ? 'timed out' : (e.message || 'failed')) + ') — this endpoint is occasionally unreliable from browsers. Using RIPEstat data instead.'; }
-}
-
-/* ===================== SOURCE: RIPEstat (ASN / prefix) — no key, reliable CORS ===================== */
-/* RIPE NCC's stat.ripe.net API is purpose-built for embedding in browser
-   widgets and consistently sends proper CORS headers, unlike BGPView. */
-async function fetchRipestat(ip){
-  try{
-    const netinfo = await fetchJson(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}`);
-    const asns = (netinfo.data && netinfo.data.asns) || [];
-    const result = { netinfo: netinfo.data, asOverview: null, prefixOverview: null };
-
-    if(asns.length){
-      try{
-        const asOv = await fetchJson(`https://stat.ripe.net/data/as-overview/data.json?resource=AS${asns[0]}`);
-        result.asOverview = asOv.data;
-      }catch(e){ /* non-fatal, ASN number alone is still useful */ }
-    }
-    try{
-      const pfx = await fetchJson(`https://stat.ripe.net/data/prefix-overview/data.json?resource=${encodeURIComponent(ip)}`);
-      result.prefixOverview = pfx.data;
-    }catch(e){ /* non-fatal */ }
-
-    state.data.ripestat = result;
-  }catch(e){ state.errors.ripestat = e.message || 'failed'; }
-}
-
-/* ===================== SOURCE: RDAP — no key ===================== */
-async function fetchRdap(ip){
-  try{
-    const d = await fetchJson('https://rdap.org/ip/' + encodeURIComponent(ip));
-    state.data.rdap = d;
-  }catch(e){ state.errors.rdap = e.message || 'failed'; }
-}
-
-/* ===================== SOURCE: Cloudflare DoH (PTR) — no key ===================== */
-function reverseIp4(ip){ return ip.split('.').reverse().join('.') + '.in-addr.arpa'; }
-async function fetchDns(ip){
-  try{
-    if(ip.includes(':')){
-      state.data.dns = { ptr: null, note: 'PTR expansion for IPv6 not implemented client-side' };
-      return;
-    }
-    const ptrName = reverseIp4(ip);
-    const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(ptrName)}&type=PTR`;
-    const d = await fetchJson(url, { headers: { 'accept': 'application/dns-json' } });
-    state.data.dns = d;
-  }catch(e){ state.errors.dns = e.message || 'failed'; }
-}
-
-/* ===================== SOURCE: DNSBL (real live zone checks) — no key ===================== */
-const DNSBL_ZONES = [
-  {name:'Spamhaus ZEN', zone:'zen.spamhaus.org'},
-  {name:'SpamCop', zone:'bl.spamcop.net'},
-  {name:'Barracuda', zone:'b.barracudacentral.org'},
-  {name:'SORBS', zone:'dnsbl.sorbs.net'},
-  {name:'CBL (Abuseat)', zone:'cbl.abuseat.org'},
-];
-async function dnsblCheck(reversedIp, zone){
-  const name = `${reversedIp}.${zone}`;
-  const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=A`;
-  const d = await fetchJson(url, { headers:{ 'accept':'application/dns-json' } }, 6000);
-  if(d.Status === 0 && d.Answer && d.Answer.length){
-    return { listed: true, code: d.Answer.map(a=>a.data).join(', ') };
-  }
-  return { listed: false };
-}
-async function fetchDnsbl(ip){
-  if(ip.includes(':')){
-    state.data.dnsbl = DNSBL_ZONES.map(z => ({...z, status:'unk', detail:'IPv6 DNSBL not widely supported'}));
-    return;
-  }
-  const reversed = ip.split('.').reverse().join('.');
-  const results = await Promise.allSettled(DNSBL_ZONES.map(z => dnsblCheck(reversed, z.zone)));
-  state.data.dnsbl = DNSBL_ZONES.map((z, i) => {
-    const r = results[i];
-    if(r.status === 'fulfilled'){
-      return { ...z, status: r.value.listed ? 'listed' : 'clean', detail: r.value.listed ? r.value.code : '—' };
-    }
-    return { ...z, status:'unk', detail:'query failed / blocked' };
+  const promises = proxies.map(proxy => {
+    return (async () => {
+      const targetUrl = proxy.getUrl(feedUrl);
+      const start = performance.now();
+      try {
+        const res = await fetch(targetUrl, { headers: { 'Accept': 'application/rss+xml, application/xml, text/xml, text/plain' } });
+        const dur = Math.round(performance.now() - start);
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        if(!text || text.length < 50) throw new Error('Empty body');
+        
+        const parsed = parserFn(text, sourceObj.name);
+        if(!parsed || parsed.length === 0) throw new Error('Parse fail');
+        
+        attempts.push({ proxy: proxy.name, status: 'SUCCESS', duration: `${dur}ms` });
+        return { items: parsed, proxyUsed: proxy.name };
+      } catch (err) {
+        const dur = Math.round(performance.now() - start);
+        attempts.push({ proxy: proxy.name, status: 'FAILED', reason: err.message || 'Error', duration: `${dur}ms` });
+        throw err;
+      }
+    })();
   });
+
+  try {
+    const result = await Promise.any(promises);
+    state.rssDiagnostics[sourceObj.name] = { success: true, proxy: result.proxyUsed, attempts };
+    return result.items;
+  } catch (aggregateErr) {
+    state.rssDiagnostics[sourceObj.name] = { success: false, proxy: 'None', attempts };
+    return [];
+  }
 }
 
-/* ===================== SOURCE: Shodan InternetDB (ports) — no key ===================== */
-async function fetchShodan(ip){
-  try{
-    const d = await fetchJson('https://internetdb.shodan.io/' + encodeURIComponent(ip));
-    state.data.shodan = d;
-  }catch(e){ state.errors.shodan = 'no record (404 is common and generally a good sign)'; }
+function sanitizeUrl(urlStr) {
+  if (!urlStr) return '#';
+  try {
+    const parsed = new URL(urlStr.trim());
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+  } catch (e) {}
+  return '#';
 }
 
-/* ===================== SOURCE: AbuseIPDB — key required ===================== */
-async function fetchAbuseIpdb(ip){
-  const key = getKey('abuseipdb');
-  if(!key) return;
-  try{
-    const d = await fetchJson(`https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(ip)}&maxAgeInDays=90`, {
-      headers: { 'Key': key, 'Accept': 'application/json' }
+function parseRssXml(xmlText, sourceName) {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+  const items = [];
+  
+  let nodes = xmlDoc.querySelectorAll('item');
+  if(!nodes.length) {
+    nodes = xmlDoc.querySelectorAll('entry');
+  }
+
+  nodes.forEach(node => {
+    const titleNode = node.querySelector('title');
+    const linkNode = node.querySelector('link');
+    const pubDateNode = node.querySelector('pubDate') || node.querySelector('published') || node.querySelector('updated');
+    const descNode = node.querySelector('description') || node.querySelector('summary') || node.querySelector('content');
+
+    let link = '#';
+    if(linkNode) {
+      link = linkNode.getAttribute('href') || linkNode.textContent;
+    }
+
+    const title = titleNode ? titleNode.textContent.trim() : 'Untitled';
+    const pubDate = pubDateNode ? pubDateNode.textContent.trim() : '';
+    const desc = descNode ? descNode.textContent.replace(/<[^>]*>?/gm, '').substring(0, 160) + '...' : '';
+
+    if(title) {
+      items.push({
+        source: sourceName,
+        title,
+        link: sanitizeUrl(link),
+        pubDate,
+        desc
+      });
+    }
+  });
+
+  return items;
+}
+
+async function loadAllThreatFeeds() {
+  state.rssDiagnostics = {};
+  const feedGrid = $('#rssFeedGrid');
+  const diagPanel = $('#rssDiagPanel');
+  
+  feedGrid.innerHTML = `<div class="loading-row"><span class="dot"></span>Racing CORS proxies for 10 security feeds...</div>`;
+  diagPanel.innerHTML = `<div class="loading-row"><span class="dot"></span>Evaluating proxy telemetry...</div>`;
+
+  const promises = RSS_SOURCES.map(source => fetchViaProxyRace(source, parseRssXml));
+  const results = await Promise.allSettled(promises);
+
+  let allItems = [];
+  results.forEach((res) => {
+    if(res.status === 'fulfilled' && res.value) {
+      allItems = allItems.concat(res.value);
+    }
+  });
+
+  state.rssItems = allItems;
+  renderRssFeedUI();
+}
+
+function renderRssFeedUI(filterKeyword='') {
+  const feedGrid = $('#rssFeedGrid');
+  const diagPanel = $('#rssDiagPanel');
+
+  let diagHtml = '';
+  for(const [srcName, info] of Object.entries(state.rssDiagnostics)) {
+    const statusColor = info.success ? 'var(--accent)' : 'var(--crit)';
+    const badge = info.success ? `✅ ${info.proxy}` : `❌ Failed`;
+    const details = info.attempts.map(a => `${a.proxy}: ${a.status} (${a.duration})${a.reason? ' - '+a.reason:''}`).join(' | ');
+    diagHtml += `<div class="diag-row"><span style="font-weight:600;min-width:140px;color:var(--text);">${esc(srcName)}</span> <span style="color:${statusColor}">${badge}</span> <span style="color:var(--text-mute);font-size:10px;" title="${esc(details)}">[inspect attempts]</span></div>`;
+  }
+  diagPanel.innerHTML = diagHtml || '<div class="na">No diagnostics available.</div>';
+
+  let filtered = state.rssItems;
+  if(filterKeyword) {
+    const kw = filterKeyword.toLowerCase();
+    filtered = state.rssItems.filter(item => 
+      item.title.toLowerCase().includes(kw) || 
+      item.desc.toLowerCase().includes(kw) || 
+      item.source.toLowerCase().includes(kw)
+    );
+  }
+
+  if(!filtered.length) {
+    feedGrid.innerHTML = `<div class="na" style="grid-column:1/-1;text-align:center;padding:30px;">No threat articles match your filter or feeds returned empty.</div>`;
+    return;
+  }
+
+  feedGrid.innerHTML = filtered.slice(0, 40).map(item => `
+    <div class="feed-card">
+      <div>
+        <div class="feed-meta"><span>${esc(item.source)}</span><span>${esc(item.pubDate ? new Date(item.pubDate).toLocaleDateString() : '')}</span></div>
+        <h4><a href="${item.link}" target="_blank" rel="noopener">${esc(item.title)}</a></h4>
+        <p style="font-size:12px;color:var(--text-dim);margin:0 0 12px;line-height:1.4;">${esc(item.desc)}</p>
+      </div>
+      <div><a href="${item.link}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 8px;">Read Article ↗</a></div>
+    </div>
+  `).join('');
+}
+
+$('#rssFilterInput').addEventListener('input', (e) => {
+  renderRssFeedUI(e.target.value.trim());
+});
+
+async function fetchCrtSh(domain) {
+  if(!domain) return [];
+  try {
+    const url = `https://crt.sh/?q=${encodeURIComponent(domain)}&output=json`;
+    const data = await fetchViaProxyRace({ name: 'crt.sh', url }, (txt) => JSON.parse(txt));
+    if(Array.isArray(data)) {
+      const names = new Set();
+      data.forEach(entry => {
+        if(entry.name_value) {
+          entry.name_value.split('\n').forEach(n => {
+            const clean = n.trim().toLowerCase();
+            if(clean && !clean.includes('*')) names.add(clean);
+          });
+        }
+      });
+      return Array.from(names).slice(0, 12);
+    }
+  } catch(e) {}
+  return [];
+}
+
+async function fetchAsnNeighbours(asn) {
+  if(!asn) return [];
+  try {
+    const cleanAsn = String(asn).replace(/^AS/i, '');
+    const res = await fetchJson(`https://stat.ripe.net/data/asn-neighbours/data.json?resource=AS${cleanAsn}`);
+    if(res && res.data && res.data.neighbours) {
+      return res.data.neighbours.slice(0, 6).map(n => ({ asn: n.asn, rel: n.type }));
+    }
+  } catch(e) {}
+  return [];
+}
+
+let pivotGraphData = { nodes: [], edges: [] };
+
+async function buildPivotGraphData() {
+  const ip = state.ip;
+  const geo = state.data.geo || {};
+  const conn = geo.connection || {};
+  const shodan = state.data.shodan || {};
+  const ripestat = state.data.ripestat || {};
+  const dnsbl = state.data.dnsbl || [];
+
+  const nodes = [];
+  const edges = [];
+
+  nodes.push({ id: ip, label: ip, type: 'ip', group: 0, radius: 28 });
+
+  const asn = resolveAsn();
+  if(asn) {
+    const asnId = 'AS' + asn;
+    const orgName = conn.org || (ripestat.asOverview ? ripestat.asOverview.holder : 'ASN ' + asn);
+    nodes.push({ id: asnId, label: asnId + '\n' + orgName.substring(0, 18), type: 'asn', group: 1, radius: 22 });
+    edges.push({ source: ip, target: asnId, label: 'BGP ASN' });
+
+    const neighbours = await fetchAsnNeighbours(asn);
+    neighbours.forEach((nb) => {
+      const nbId = 'AS' + nb.asn;
+      nodes.push({ id: nbId, label: nbId, type: 'asn', group: 1, radius: 16 });
+      edges.push({ source: asnId, target: nbId, label: 'Neighbour' });
     });
-    state.data.abuseipdb = d.data || d;
-  }catch(e){ state.errors.abuseipdb = 'request blocked (likely browser CORS restriction on this endpoint/tier) or invalid key'; }
-}
+  }
 
-/* ===================== SOURCE: VirusTotal — key required ===================== */
-async function fetchVirusTotal(ip){
-  const key = getKey('virustotal');
-  if(!key) return;
-  try{
-    const d = await fetchJson(`https://www.virustotal.com/api/v3/ip_addresses/${encodeURIComponent(ip)}`, {
-      headers: { 'x-apikey': key }
+  if(ripestat.prefixOverview && ripestat.prefixOverview.resource) {
+    const pfx = ripestat.prefixOverview.resource;
+    nodes.push({ id: pfx, label: pfx, type: 'prefix', group: 2, radius: 18 });
+    edges.push({ source: ip, target: pfx, label: 'CIDR Block' });
+  }
+
+  const hostnames = shodan.hostnames || [];
+  if(conn.domain && !hostnames.includes(conn.domain)) hostnames.push(conn.domain);
+
+  for(const h of hostnames.slice(0, 4)) {
+    nodes.push({ id: h, label: h, type: 'domain', group: 3, radius: 18 });
+    edges.push({ source: ip, target: h, label: 'Hostname' });
+
+    const sanDomains = await fetchCrtSh(h);
+    sanDomains.slice(0, 3).forEach(sd => {
+      if(sd !== h) {
+        nodes.push({ id: sd, label: sd, type: 'cert', group: 4, radius: 14 });
+        edges.push({ source: h, target: sd, label: 'Shared Cert SAN' });
+      }
     });
-    state.data.virustotal = d.data;
-  }catch(e){ state.errors.virustotal = 'request blocked (VirusTotal\'s API commonly rejects direct browser CORS requests) or invalid key'; }
-}
 
-/* ===================== SOURCE: GreyNoise Community — key required ===================== */
-async function fetchGreyNoise(ip){
-  const key = getKey('greynoise');
-  if(!key) return;
-  try{
-    const d = await fetchJson(`https://api.greynoise.io/v3/community/${encodeURIComponent(ip)}`, {
-      headers: { 'key': key, 'Accept': 'application/json' }
+    state.rssItems.forEach(article => {
+      if(article.title.toLowerCase().includes(ip.toLowerCase()) || article.title.toLowerCase().includes(h.toLowerCase())) {
+        const artId = 'art_' + Math.random().toString(36).substring(2, 7);
+        nodes.push({ id: artId, label: article.title.substring(0, 22) + '...', type: 'rss', group: 5, radius: 16, link: article.link });
+        edges.push({ source: h, target: artId, label: 'Threat Mention' });
+      }
     });
-    state.data.greynoise = d;
-  }catch(e){ state.errors.greynoise = 'request failed (CORS restriction or invalid key)'; }
+  }
+
+  dnsbl.filter(z => z.status === 'listed').forEach(z => {
+    const blId = 'bl_' + z.name;
+    nodes.push({ id: blId, label: z.name, type: 'bl', group: 6, radius: 16 });
+    edges.push({ source: ip, target: blId, label: 'DNSBL Listed' });
+  });
+
+  pivotGraphData = { nodes, edges };
 }
 
-/* ===================== SOURCE: IPQualityScore — key required ===================== */
-async function fetchIpqs(ip){
-  const key = getKey('ipqualityscore');
-  if(!key) return;
-  try{
-    const d = await fetchJson(`https://ipqualityscore.com/api/json/ip/${encodeURIComponent(key)}/${encodeURIComponent(ip)}`);
-    state.data.ipqs = d;
-  }catch(e){ state.errors.ipqs = 'request failed (CORS restriction or invalid key)'; }
+function renderPivotGraph() {
+  const container = $('#pivotGraphContainer');
+  const svg = $('#pivotSvg');
+  if(!container || !svg) return;
+
+  const width = container.clientWidth || 900;
+  const height = container.clientHeight || 520;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.innerHTML = '';
+
+  const nodes = pivotGraphData.nodes;
+  const edges = pivotGraphData.edges;
+
+  if(!nodes.length) {
+    svg.innerHTML = `<text x="${width/2}" y="${height/2}" fill="var(--text-mute)" text-anchor="middle" font-family="var(--font-mono)">Load an IP first to generate the Infrastructure Pivot Graph.</text>`;
+    return;
+  }
+
+  const centerX = width / 2;
+  const centerY = height / 2;
+
+  nodes.forEach((node, i) => {
+    if(node.type === 'ip') {
+      node.x = centerX;
+      node.y = centerY;
+    } else {
+      const angle = (i / (nodes.length - 1)) * 2 * Math.PI;
+      const dist = node.group === 4 ? 200 : (node.group === 5 ? 240 : 120);
+      node.x = centerX + Math.cos(angle) * dist;
+      node.y = centerY + Math.sin(angle) * dist;
+    }
+  });
+
+  const colorMap = {
+    ip: 'var(--accent)',
+    asn: 'var(--info)',
+    prefix: '#a855f7',
+    domain: '#eab308',
+    cert: '#ec4899',
+    rss: '#f97316',
+    bl: 'var(--crit)'
+  };
+
+  let htmlEdges = '';
+  edges.forEach(edge => {
+    const sNode = nodes.find(n => n.id === edge.source);
+    const tNode = nodes.find(n => n.id === edge.target);
+    if(sNode && tNode) {
+      htmlEdges += `<line x1="${sNode.x}" y1="${sNode.y}" x2="${tNode.x}" y2="${tNode.y}" stroke="var(--line-bright)" stroke-width="1.5" stroke-dasharray="${edge.label==='Shared Cert SAN'?'4 4':''}"/>`;
+      htmlEdges += `<text x="${(sNode.x+tNode.x)/2}" y="${(sNode.y+tNode.y)/2 - 4}" fill="var(--text-mute)" font-size="9" font-family="var(--font-mono)" text-anchor="middle">${esc(edge.label)}</text>`;
+    }
+  });
+
+  let htmlNodes = '';
+  nodes.forEach(node => {
+    const col = colorMap[node.type] || 'var(--text-dim)';
+    const cursor = node.link ? 'cursor:pointer;' : '';
+    htmlNodes += `<g transform="translate(${node.x}, ${node.y})" style="${cursor}" ${node.link?`onclick="window.open('${node.link}','_blank')"`:''}>`;
+    htmlNodes += `<circle r="${node.radius}" fill="var(--bg-panel)" stroke="${col}" stroke-width="2"/>`;
+    htmlNodes += `<circle r="4" fill="${col}"/>`;
+    htmlNodes += `<text dy="${node.radius + 14}" text-anchor="middle" fill="var(--text)" font-size="10" font-family="var(--font-mono)">${esc(node.label.split('\n')[0])}</text>`;
+    htmlNodes += `</g>`;
+  });
+
+  svg.innerHTML = `<g>${htmlEdges}${htmlNodes}</g>`;
 }
 
-/* ===================== SOURCE: AlienVault OTX — key optional ===================== */
-async function fetchOtx(ip){
-  if(ip.includes(':')) return; // OTX general endpoint used here targets IPv4 pulse data
-  try{
-    const key = getKey('otx');
-    const headers = key ? { 'X-OTX-API-KEY': key } : {};
-    const d = await fetchJson(`https://otx.alienvault.com/api/v1/indicators/IPv4/${encodeURIComponent(ip)}/general`, { headers });
-    state.data.otx = d;
-  }catch(e){ state.errors.otx = 'request failed (rate-limited without a key, CORS restriction, or invalid key)'; }
-}
-
-/* ===================== RISK ENGINE ===================== */
 function computeRisk(){
   let score = 0;
   const factors = [];
@@ -1154,7 +1263,6 @@ function computeRisk(){
   return { score, factors };
 }
 
-/* ===================== RENDER ===================== */
 function renderAll(){
   renderGauge();
   renderSummaryCards();
@@ -1170,6 +1278,7 @@ function renderAll(){
   renderIpqs();
   renderOtx();
   renderRaw();
+  buildPivotGraphData();
   const risk = computeRisk();
   pushHistory(state.ip, risk.score, riskLabel(risk.score));
 }
@@ -1204,13 +1313,40 @@ function renderSummaryCards(){
   const geo = state.data.geo || {};
   const sec = geo.security || {};
   const conn = geo.connection || {};
+  const abuse = state.data.abuseipdb || {};
+  const dnsbl = state.data.dnsbl || [];
+
+  const orgName = (conn.org || '').toLowerCase();
+  const ispName = (conn.isp || '').toLowerCase();
+  const domainName = (conn.domain || '').toLowerCase();
+
+  // HEURISTIC ENHANCEMENT FOR VPN / PROXY / HOSTING
+  const isVpn = sec.vpn || orgName.includes('surfshark') || orgName.includes('m247') || orgName.includes('nordvpn') || orgName.includes('expressvpn') || orgName.includes('cyberghost') || orgName.includes('private internet access') || orgName.includes('proton') || domainName.includes('surfshark');
+
+  const isHosting = sec.hosting || isVpn || orgName.includes('godaddy') || orgName.includes('aws') || orgName.includes('amazon') || orgName.includes('digitalocean') || orgName.includes('cloudflare') || orgName.includes('google cloud') || orgName.includes('microsoft') || orgName.includes('ovh') || orgName.includes('hetzner');
+
+  const isMobile = sec.mobile || ispName.includes('cellular') || ispName.includes('mobile') || ispName.includes('telecom') || ispName.includes('vodafone') || ispName.includes('t-mobile') || ispName.includes('verizon') || ispName.includes('telkomsel') || ispName.includes('indosat') || ispName.includes('xl axiata');
+  
+  const isAnycast = sec.anycast || domainName.includes('dns') || orgName.includes('cloudflare') || orgName.includes('google') || orgName.includes('quad9') || orgName.includes('opendns') || state.ip === '1.1.1.1' || state.ip === '8.8.8.8' || state.ip === '9.9.9.9';
+
+  const isCrawler = sec.crawler || orgName.includes('googlebot') || orgName.includes('bingbot') || orgName.includes('shodan') || orgName.includes('censys') || domainName.includes('googlebot') || domainName.includes('crawl');
+
+  const hasDnsblListed = dnsbl.some(z => z.status === 'listed');
+  const hasHighAbuse = (typeof abuse.abuseConfidenceScore === 'number' && abuse.abuseConfidenceScore > 40);
+  const isAbuser = (sec.abuser === true) || hasDnsblListed || hasHighAbuse;
 
   const badges = [];
   const b = (label, on, tone) => `<span class="badge ${on?('on-'+tone):''}">${on?'●':'○'} ${label}</span>`;
-  badges.push(b('VPN', !!sec.vpn, 'warn'));
+  
+  badges.push(b('VPN', !!isVpn, 'warn'));
   badges.push(b('Proxy', !!sec.proxy, 'warn'));
   badges.push(b('Tor', !!sec.tor, 'crit'));
-  badges.push(b('Hosting', !!sec.hosting, 'info'));
+  badges.push(b('Hosting', !!isHosting, 'info'));
+
+  badges.push(b('Mobile/Carrier', !!isMobile, 'info'));
+  badges.push(b('Anycast/DNS', !!isAnycast, 'info'));
+  badges.push(b('Crawler/Bot', !!isCrawler, 'info'));
+  badges.push(b('Abuser', !!isAbuser, 'crit'));
 
   const cards = [
     { k:'IP Address', v:`<span class="mono">${esc(state.ip)}</span>` },
@@ -1230,7 +1366,6 @@ function renderNetwork(){
   const conn = (state.data.geo || {}).connection || {};
   const rows = [];
 
-  // Primary: RIPEstat (reliable CORS, purpose-built for browser widgets)
   if(rs && rs.netinfo){
     const asns = rs.netinfo.asns || [];
     const holder = rs.asOverview ? rs.asOverview.holder : null;
@@ -1247,19 +1382,11 @@ function renderNetwork(){
     rows.push(`<div class="err-row" style="grid-column:1/-1;">RIPEstat query failed: ${esc(state.errors.ripestat)}</div>`);
   }
 
-  // Supplemental: BGPView, best-effort only — shown when it succeeds, otherwise
-  // a short note explains why it's missing without blanking the whole panel.
   if(bg && bg.data){
     const d = bg.data;
     const prefixes = (d.prefixes || []).slice(0,3).map(p => `${p.prefix} (${p.name||''})`).join('<br>');
     if(prefixes) rows.push(kvRow('Other announced prefixes', prefixes));
     if(d.rir_allocation) rows.push(kvRow('RIR', `${esc(d.rir_allocation.rir_name)} — ${esc(d.rir_allocation.date_allocated||'')}`));
-    if(!rs || !(rs.netinfo && rs.netinfo.asns && rs.netinfo.asns[0])){
-      const firstAsn = d.asns && d.asns[0] ? d.asns[0].asn : null;
-      if(firstAsn) $('#heNetLink').href = 'https://bgp.he.net/AS' + firstAsn;
-    }
-  } else if(state.errors.bgpview){
-    rows.push(`<div class="na" style="grid-column:1/-1;font-size:12px;">${esc(state.errors.bgpview)}</div>`);
   }
 
   $('#asnKv').innerHTML = rows.length ? rows.join('') : `<div class="err-row" style="grid-column:1/-1;">No network data returned from any source.</div>`;
@@ -1463,7 +1590,6 @@ function renderRaw(){
   $('#rawTiming').textContent = new Date().toISOString();
 }
 
-/* ===================== EXPORT ===================== */
 function currentPayload(){
   const risk = computeRisk();
   return { ip: state.ip, riskScore: risk.score, riskLevel: riskLabel(risk.score), riskFactors: risk.factors, ...state.data, _errors: state.errors, generatedAt: new Date().toISOString() };
@@ -1523,9 +1649,262 @@ ${(p.riskFactors||[]).map(f=>'- '+f).join('\n')}
   setStatus('Markdown report copied to clipboard.');
 });
 
-/* ===================== INIT ===================== */
+const FETCHERS = [
+  fetchGeo, fetchRipestat, fetchBgpview, fetchRdap, fetchDns, fetchDnsbl, fetchShodan,
+  fetchAbuseIpdb, fetchVirusTotal, fetchGreyNoise, fetchIpqs, fetchOtx
+];
+
+async function runLookup(ip){
+  if(!ip){ setStatus('Enter an IP address first.', true); return; }
+  if(!isValidIP(ip)){ setStatus('That doesn\'t look like a valid IPv4/IPv6 address.', true); return; }
+
+  state.ip = ip;
+  state.data = {};
+  state.errors = {};
+  state.startTime = performance.now();
+
+  $('#lookupBtn').disabled = true;
+  $('#lookupBtn').textContent = 'Scanning…';
+  $('#emptyState').style.display = 'none';
+  $('#summary').classList.add('show');
+  $('#tabs').style.display = 'flex';
+  $('#exportBar').style.display = 'flex';
+  $('#heNetLink').href = 'https://bgp.he.net/ip/' + encodeURIComponent(ip);
+  setStatus('<span class="dot"></span>querying public sources for ' + esc(ip) + '…');
+  resetPanels();
+
+  const cached = cacheGet(ip);
+  if(cached){
+    state.data = cached;
+    finishScanUi(100);
+    renderAll();
+    setStatus('Loaded from local cache (age &lt; TTL). <a href="#" id="forceRefresh">Refresh now</a>');
+    const fr = document.getElementById('forceRefresh');
+    if(fr) fr.addEventListener('click', (e)=>{ e.preventDefault(); localStorage.removeItem(LS_KEYS.cachePrefix+ip); runLookup(ip); });
+    $('#lookupBtn').disabled = false;
+    $('#lookupBtn').textContent = 'Analyze';
+    return;
+  }
+
+  $('#gaugeCard').classList.add('scanning');
+  $('#gaugeMax').textContent = 'SCANNING';
+  let done = 0;
+  const total = FETCHERS.length;
+  updateScanProgress(0);
+
+  const wrapped = FETCHERS.map(fn => fn(ip).catch(()=>{}).finally(() => {
+    done++;
+    updateScanProgress(Math.max(1, Math.round(done/total*100)));
+  }));
+  await Promise.allSettled(wrapped);
+
+  cacheSet(ip, state.data);
+  finishScanUi();
+  renderAll();
+
+  const ms = Math.round(performance.now() - state.startTime);
+  setStatus(`Scan complete in ${ms}ms · sources queried: ${total}`);
+  $('#lookupBtn').disabled = false;
+  $('#lookupBtn').textContent = 'Analyze';
+}
+
+function updateScanProgress(pct){
+  const circumference = 2 * Math.PI * 70;
+  const offset = circumference - (pct/100)*circumference;
+  const fg = $('#gaugeFg');
+  fg.style.stroke = 'var(--accent)';
+  fg.setAttribute('stroke-dasharray', circumference.toFixed(1));
+  fg.style.strokeDashoffset = offset.toFixed(1);
+  $('#gaugeScore').textContent = pct + '%';
+  $('#gaugeScore').style.color = 'var(--accent)';
+  $('#gaugeLabel').textContent = 'SCANNING';
+  $('#gaugeLabel').style.color = 'var(--accent)';
+}
+function finishScanUi(){
+  $('#gaugeCard').classList.remove('scanning');
+  $('#gaugeMax').textContent = '/ 100 RISK';
+}
+
+function resetPanels(){
+  $('#asnKv').innerHTML = loadingKv();
+  $('#connKv').innerHTML = loadingKv();
+  $('#geoKv').innerHTML = loadingKv();
+  $('#whoisKv').innerHTML = loadingKv();
+  $('#dnsKv').innerHTML = loadingKv();
+  $('#ptrBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
+  $('#dnsblBody').innerHTML = `<tr><td colspan="3" class="loading-row"><span class="dot"></span>querying zones…</td></tr>`;
+  $('#portsBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
+  $('#abuseBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
+  $('#vtBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
+  $('#gnBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
+  $('#ipqsBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
+  $('#otxBox').innerHTML = '<div class="loading-row"><span class="dot"></span>querying…</div>';
+  $('#summaryCards').innerHTML = '';
+  $('#gaugeScore').textContent = '0%';
+  $('#gaugeLabel').textContent = 'SCANNING';
+}
+function loadingKv(){ return `<div class="loading-row" style="grid-column:1/-1;"><span class="dot"></span>querying…</div>`; }
+
+async function fetchGeo(ip){
+  try{
+    const d = await fetchJson('https://ipwho.is/' + encodeURIComponent(ip) + '?security=1');
+    if(d.success === false) throw new Error(d.message || 'lookup failed');
+    state.data.geo = d;
+  }catch(e){ state.errors.geo = e.message || 'failed'; }
+}
+
+async function fetchBgpview(ip){
+  try{
+    const d = await fetchJson('https://api.bgpview.io/ip/' + encodeURIComponent(ip), {}, 6000);
+    state.data.bgpview = d;
+  }catch(e){ state.errors.bgpview = 'BGPView unavailable'; }
+}
+
+async function fetchRipestat(ip){
+  try{
+    const netinfo = await fetchJson(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(ip)}`);
+    const asns = (netinfo.data && netinfo.data.asns) || [];
+    const result = { netinfo: netinfo.data, asOverview: null, prefixOverview: null };
+
+    if(asns.length){
+      try{
+        const asOv = await fetchJson(`https://stat.ripe.net/data/as-overview/data.json?resource=AS${asns[0]}`);
+        result.asOverview = asOv.data;
+      }catch(e){}
+    }
+    try{
+      const pfx = await fetchJson(`https://stat.ripe.net/data/prefix-overview/data.json?resource=${encodeURIComponent(ip)}`);
+      result.prefixOverview = pfx.data;
+    }catch(e){}
+
+    state.data.ripestat = result;
+  }catch(e){ state.errors.ripestat = e.message || 'failed'; }
+}
+
+async function fetchRdap(ip){
+  try{
+    const d = await fetchJson('https://rdap.org/ip/' + encodeURIComponent(ip));
+    state.data.rdap = d;
+  }catch(e){ state.errors.rdap = e.message || 'failed'; }
+}
+
+function reverseIp4(ip){ return ip.split('.').reverse().join('.') + '.in-addr.arpa'; }
+async function fetchDns(ip){
+  try{
+    if(ip.includes(':')){
+      state.data.dns = { ptr: null, note: 'PTR expansion for IPv6 not implemented client-side' };
+      return;
+    }
+    const ptrName = reverseIp4(ip);
+    const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(ptrName)}&type=PTR`;
+    const d = await fetchJson(url, { headers: { 'accept': 'application/dns-json' } });
+    state.data.dns = d;
+  }catch(e){ state.errors.dns = e.message || 'failed'; }
+}
+
+const DNSBL_ZONES = [
+  {name:'Spamhaus ZEN', zone:'zen.spamhaus.org'},
+  {name:'SpamCop', zone:'bl.spamcop.net'},
+  {name:'Barracuda', zone:'b.barracudacentral.org'},
+  {name:'SORBS', zone:'dnsbl.sorbs.net'},
+  {name:'CBL (Abuseat)', zone:'cbl.abuseat.org'},
+];
+async function dnsblCheck(reversedIp, zone){
+  const name = `${reversedIp}.${zone}`;
+  const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=A`;
+  const d = await fetchJson(url, { headers:{ 'accept':'application/dns-json' } }, 6000);
+  if(d.Status === 0 && d.Answer && d.Answer.length){
+    return { listed: true, code: d.Answer.map(a=>a.data).join(', ') };
+  }
+  return { listed: false };
+}
+async function fetchDnsbl(ip){
+  if(ip.includes(':')){
+    state.data.dnsbl = DNSBL_ZONES.map(z => ({...z, status:'unk', detail:'IPv6 DNSBL not widely supported'}));
+    return;
+  }
+  const reversed = ip.split('.').reverse().join('.');
+  const results = await Promise.allSettled(DNSBL_ZONES.map(z => dnsblCheck(reversed, z.zone)));
+  state.data.dnsbl = DNSBL_ZONES.map((z, i) => {
+    const r = results[i];
+    if(r.status === 'fulfilled'){
+      return { ...z, status: r.value.listed ? 'listed' : 'clean', detail: r.value.listed ? r.value.code : '—' };
+    }
+    return { ...z, status:'unk', detail:'query failed / blocked' };
+  });
+}
+
+async function fetchShodan(ip){
+  try{
+    const d = await fetchJson('https://internetdb.shodan.io/' + encodeURIComponent(ip));
+    state.data.shodan = d;
+  }catch(e){ state.errors.shodan = 'no record'; }
+}
+
+async function fetchAbuseIpdb(ip){
+  const key = getKey('abuseipdb');
+  if(!key) return;
+  try{
+    const d = await fetchJson(`https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(ip)}&maxAgeInDays=90`, {
+      headers: { 'Key': key, 'Accept': 'application/json' }
+    });
+    state.data.abuseipdb = d.data || d;
+  }catch(e){ state.errors.abuseipdb = 'request blocked or invalid key'; }
+}
+
+async function fetchVirusTotal(ip){
+  const key = getKey('virustotal');
+  if(!key) return;
+  try{
+    const d = await fetchJson(`https://www.virustotal.com/api/v3/ip_addresses/${encodeURIComponent(ip)}`, {
+      headers: { 'x-apikey': key }
+    });
+    state.data.virustotal = d.data;
+  }catch(e){ state.errors.virustotal = 'request blocked or invalid key'; }
+}
+
+async function fetchGreyNoise(ip){
+  const key = getKey('greynoise');
+  if(!key) return;
+  try{
+    const d = await fetchJson(`https://api.greynoise.io/v3/community/${encodeURIComponent(ip)}`, {
+      headers: { 'key': key, 'Accept': 'application/json' }
+    });
+    state.data.greynoise = d;
+  }catch(e){ state.errors.greynoise = 'request failed or invalid key'; }
+}
+
+async function fetchIpqs(ip){
+  const key = getKey('ipqualityscore');
+  if(!key) return;
+  try{
+    const d = await fetchJson(`https://ipqualityscore.com/api/json/ip/${encodeURIComponent(key)}/${encodeURIComponent(ip)}`);
+    state.data.ipqs = d;
+  }catch(e){ state.errors.ipqs = 'request failed or invalid key'; }
+}
+
+async function fetchOtx(ip){
+  if(ip.includes(':')) return;
+  try{
+    const key = getKey('otx');
+    const headers = key ? { 'X-OTX-API-KEY': key } : {};
+    const d = await fetchJson(`https://otx.alienvault.com/api/v1/indicators/IPv4/${encodeURIComponent(ip)}/general`, { headers });
+    state.data.otx = d;
+  }catch(e){ state.errors.otx = 'request failed'; }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const lookupBtn = $('#lookupBtn');
+  const ipInput = $('#ipInput');
+  if(lookupBtn && ipInput){
+    lookupBtn.addEventListener('click', () => runLookup(ipInput.value.trim()));
+    ipInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') runLookup(ipInput.value.trim()); });
+  }
+});
+
 renderApiStatusBar();
 renderHistory();
+loadAllThreatFeeds();
 })();
 </script>
 </body>
